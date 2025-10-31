@@ -1,0 +1,23 @@
+[
+	{
+		"id": "service1",
+		"name": "service1",
+		"local": "/service1/Manifest.mpd",
+		"active": true,
+		"keepalive": 4,
+		"timeshift": 10,
+
+		"http": "http://smartcd.origin:8080/Manifest.mpd",
+
+		"gcache": false,
+		"mcache": false,
+		"unload": 4,
+		"repair": false,
+		"corrupted": false,
+
+		"activate": 1,
+		"check_ip": false,
+
+		"js": "/Users/ndvx/code/smart-CD/workbench/gateway/dev/service1.dev.js"
+	}
+]

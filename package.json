@@ -1,0 +1,13 @@
+{
+  "name": "workbench",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "workbench": "./index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "yaml": "^2.5.0"
+  }
+}

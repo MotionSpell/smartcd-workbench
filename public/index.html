@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Workbench</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; }
+    button { margin-left: 0.5em; }
+
+    .toggle {
+      display: inline-block;
+      --w: 46px;
+      --h: 26px;
+      --gap: 3px;
+      --knob-d: calc(var(--h) - var(--gap) * 2);
+
+      position: relative;
+      font-size: 16px;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .toggle input {
+      position: absolute;
+      width: 1px; height: 1px;
+      margin: -1px; padding: 0;
+      overflow: hidden; clip: rect(0 0 0 0);
+      white-space: nowrap; border: 0;
+    }
+
+    .toggle .track {
+      width: var(--w);
+      height: var(--h);
+      background: #ccc;
+      border-radius: calc(var(--h) / 2);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+      transition: background 160ms ease;
+      display: inline-block;
+      vertical-align: middle;
+      padding: var(--gap);
+      box-sizing: border-box;
+    }
+
+    .toggle .knob {
+      width: var(--knob-d);
+      height: var(--knob-d);
+      background: white;
+      border-radius: 50%;
+      transform: translateX(0);
+      transition: transform 160ms cubic-bezier(.2,.8,.2,1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    .toggle input:checked + .track {
+      background: #34c759;
+    }
+    .toggle input:checked + .track .knob {
+      transform: translateX(calc(var(--w) - var(--knob-d) - var(--gap) * 2));
+    }
+
+    .toggle input:focus + .track {
+      box-shadow: 0 0 0 4px rgba(52,199,89,0.18);
+    }
+
+    .toggle input:disabled + .track {
+      opacity: 0.6;
+      filter: grayscale(.3);
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <video id="videoPlayer" controls></video>
+  </div>
+
+  <div>
+    <label for="videoSource">Video Source:</label>
+    <input
+      type="text"
+      id="videoSource"
+      name="videoSource"
+      size="32"
+      value=""
+      readonly/>
+    <div><strong>x-from-mabr: </strong><span id="from-mabr"></span></div>
+  </div>
+
+  <div>
+    <div id="processes" loading="false"></div>
+
+    <!--
+    <label class="toggle" aria-label="toggle mabr">
+      <input type="checkbox" id="mabr-availability">
+      <span class="track">
+        <span class="knob" aria-hidden="true"></span>
+      </span>
+      Advertize mabr to gateway.
+    </label>
+    -->
+    
+  </div>
+
+  <script src="https://cdn.dashjs.org/latest/modern/umd/dash.all.min.js"></script>
+
+  <script>
+    (function () {
+      function setProcessesState(data){
+        const container = document.getElementById('processes');
+        container.innerHTML = '';
+        for (const [name, status] of Object.entries(data)) {
+          const div = document.createElement('div');
+          div.innerHTML = `<b>${name}</b>: ${status}`;
+          const startBtn = document.createElement('button');
+          startBtn.textContent = 'Start';
+          startBtn.onclick = () => fetch('/api/start/' + name).then(updateSate);
+          const stopBtn = document.createElement('button');
+          stopBtn.textContent = 'Stop';
+          stopBtn.onclick = () => fetch('/api/stop/' + name).then(updateSate);
+          div.appendChild(startBtn);
+          div.appendChild(stopBtn);
+          container.appendChild(div);
+        }
+      }
+      
+      /*
+      function setMabrAvailabilityState(mabrAvailability){
+        const container = document.getElementById('mabr-availability');
+        container.checked = mabrAvailability;
+      }
+
+      async function enableMabrAvailability(enable){
+        const res = await fetch('/api/toggle-mabr-availability', {method: "POST", body: { mabrAvailability: enable }});
+        const data = await res.json();
+        console.log("/api/toggle-mabr-availability " + data);
+      }
+      */
+
+      const getVideoSourceUrl = () => document.getElementById('videoSource').value;
+      const setVideoSourceUrl = (value) => {
+        if (value != getVideoSourceUrl()){
+          player.attachSource(value);
+        }
+        document.getElementById('videoSource').value = value;
+      }
+
+      async function updateSate() {
+        const res = await fetch('/api/status');
+        const { processes, mabrAvailability } = await res.json();
+        setProcessesState(processes);
+        // setMabrAvailabilityState(mabrAvailability);
+        
+        if (processes['gateway'] == 'running'){
+          setVideoSourceUrl("http://127.0.0.1:8081/service1/Manifest.mpd");
+        } else if (processes['avgen'] == 'running'){
+          setVideoSourceUrl("http://127.0.0.1:8080/Manifest.mpd");
+        } else {
+          setVideoSourceUrl("http://127.0.0.1:8080/Manifest.mpd");        
+        }
+      }
+
+      const interceptor = response => {
+          const msg = "x-from-mabr" in response.headers ? response.headers["x-from-mabr"] : "undefined";
+          document.getElementById('from-mabr').innerHTML = `<em>${msg} - ${response.url.split('/').pop()}</em>`;
+          return Promise.resolve(response);
+      }
+      const player = dashjs.MediaPlayer().create();
+      player.addResponseInterceptor(interceptor)
+      player.initialize(document.querySelector("#videoPlayer"), null, true);
+      player.setMute(true);
+      
+      /*
+      document.getElementById('mabr-availability').addEventListener('change', e => {
+        mabrAvailability = e.target.checked;
+        enableMabrAvailability(mabrAvailability);
+      });
+      */
+
+      updateSate();
+      setInterval(updateSate, 2000);
+    })();
+  </script>
+
+</body>
+</html>
