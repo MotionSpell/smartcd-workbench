@@ -33,6 +33,8 @@
 
   <script>
     (function () {
+      let segmentRequestCount = 0;
+      let segmentRequestFromMABRCount = 0;
       function setProcessesState(data){
         const container = document.getElementById('processes');
         container.innerHTML = '';
@@ -71,9 +73,14 @@
       }
 
       const interceptor = response => {
-          const msg = "x-from-mabr" in response.headers ? response.headers["x-from-mabr"] : "undefined";
-          if (response.url)
-            document.getElementById('from-mabr').innerHTML = `<em>${msg} - ${response.url.split('/').pop()}</em>`;
+          if (response.url && !response.url.endsWith('.mpd')){
+            const msg = "x-from-mabr" in response.headers ? response.headers["x-from-mabr"] : "undefined";
+            if (msg == 'yes')
+              segmentRequestFromMABRCount++;
+            segmentRequestCount++;
+            fromMABRCount = `total: ${segmentRequestFromMABRCount}/${segmentRequestCount} - ${((segmentRequestFromMABRCount/segmentRequestCount)*100).toFixed(1)}% played segments from mABR`;
+            document.getElementById('from-mabr').innerHTML = `<em>${response.url.split('/').pop()}: ${msg}</em> | ${fromMABRCount}`;
+          }
           return Promise.resolve(response);
       }
       const player = dashjs.MediaPlayer().create();
