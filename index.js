@@ -5,9 +5,6 @@ import express from 'express';
 import ProcessManager from './processes/manager.js';
 import process from 'process';
 
-let advertiseMabrAvailability = false;
-
-
 const args = process.argv.slice(2);
 const cfg = YAML.parse(fs.readFileSync( args.length > 0 ? args[0] : 'workbench.yml', 'utf8'));
 
@@ -45,19 +42,13 @@ app.get('/api/stop/:name', (req, res) => {
   res.json(pm.stop(name));
 });
 
-app.post('/api/toggle-mabr-availability', (req, res) => {
-  advertiseMabrAvailability = !advertiseMabrAvailability;
-  res.json({mabrAvailability: advertiseMabrAvailability});
-});
-
 app.get('/api/status', (req, res) => {
   const data = {
     processes: pm.status(),
-    mabrAvailability: advertiseMabrAvailability
+    config: cfg
   };
   res.json(data);
 });
-
 
 const mabrIsAvailable = () => pm.status()["mabr-server"] == "running";
 

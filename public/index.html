@@ -62,15 +62,11 @@
 
       async function updateSate() {
         const res = await fetch('/api/status');
-        const { processes, mabrAvailability } = await res.json();
+        const { processes, config } = await res.json();
         setProcessesState(processes);
         
         if (processes['gateway'] == 'running'){
-          setVideoSourceUrl("http://127.0.0.1:8081/service1/Manifest.mpd");
-        } else if (processes['avgen'] == 'running'){
-          setVideoSourceUrl("http://127.0.0.1:8080/Manifest.mpd");
-        } else {
-          setVideoSourceUrl("http://127.0.0.1:8080/Manifest.mpd");        
+          setVideoSourceUrl(`http://127.0.0.1:${config.gateway?.port || 8081}/service1/Manifest.mpd`);
         }
       }
 
