@@ -3,7 +3,7 @@ import {XMLHttpRequest} from 'xhr';
 
 
 // SERVICE ID / SPECIFIC INFORMATION ? 
-const ORCHESTRATOR_URI =  "http://smartcd.api:3000/api";
+const ORCHESTRATOR_URI =  "http://127.0.0.1:3000/api";
 const SOFTWARE_RELEASE_URI = "urn:1b54fdfa-55da-4896-9f53-028318ad51b5";
 const COMPUTER_GUID = "COMP-0";
 

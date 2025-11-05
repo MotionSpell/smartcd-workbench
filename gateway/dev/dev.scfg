@@ -7,7 +7,7 @@
 		"keepalive": 4,
 		"timeshift": 3600,
 
-		"http": "http://smartcd.origin:8080/Manifest.mpd",
+		"http": "http://127.0.0.1:8080/Manifest.mpd",
 
 		"gcache": false,
 		"mcache": false,
