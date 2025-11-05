@@ -79,6 +79,9 @@
       const player = dashjs.MediaPlayer().create();
       player.addResponseInterceptor(interceptor)
       player.initialize(document.querySelector("#videoPlayer"), null, true);
+      player.updateSettings({
+        liveDelay: 10
+      });
       player.setMute(true);
       
       updateSate();
