@@ -11,7 +11,7 @@ export default class ProcessManager {
   }
 
   buildCommands(cfg) {
-    const avgenCmd = `gpac -logs=ncl -i avgen:fps=25:sr=48000 ffenc:c=avc:x264-params=keyint=48:min-keyint=48:no-scenecut ffenc:c=aac reframer:rt=on -o ${cfg.avgen.uri}:segdur=1.92:profile=live:dmode=dynamic:tsb=120:asto=4:rdirs=${cfg.avgen.rdirs}`;
+    const avgenCmd = `gpac -logs=ncl -i avgen:fps=25:sr=48000 ffenc:c=avc:x264-params=keyint=48:min-keyint=48:no-scenecut ffenc:c=aac -o ${cfg.avgen.uri}:segdur=1.92:profile=live:dmode=dynamic:tsb=120:maxp=0:maxc=0:rdirs=${cfg.avgen.rdirs}`;
     const gatewayCmd = `gpac -logs=ncl:http@info:route@info mediaserver:port=${cfg.gateway.port}:scfg=${cfg.gateway.scfg}`;
     const mabrOrigin = cfg['mabr-server'].origin === 'avgen' ? cfg.avgen.uri : cfg['mabr-server'].origin;
     const mabrCmd = `gpac -logs=ncl:http@info:route@info -i ${mabrOrigin} dashin:forward=file -o ${cfg['mabr-server'].output}`;
@@ -54,4 +54,5 @@ export default class ProcessManager {
 
     return res;
   }
+  
 }
