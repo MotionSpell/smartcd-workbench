@@ -11,7 +11,7 @@ mabr-server:
   # replace avgen with custom http origin
   origin: avgen
   # route / mABR 
-  output: route://234.1.1.1:1234/
+  output: route://234.1.1.1:1234/:ifce=127.0.0.1
   # ms delay before auto start
   delay: 5000
 
