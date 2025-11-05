@@ -5,7 +5,7 @@
 		"local": "/service1/Manifest.mpd",
 		"active": true,
 		"keepalive": 4,
-		"timeshift": 60,
+		"timeshift": 3600,
 
 		"http": "http://smartcd.origin:8080/Manifest.mpd",
 
