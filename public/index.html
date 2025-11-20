@@ -66,7 +66,6 @@
         const res = await fetch('/api/status');
         const { processes, config } = await res.json();
         setProcessesState(processes);
-        
         if (processes['gateway'] == 'running'){
           setVideoSourceUrl(`http://127.0.0.1:${config.gateway?.port || 8081}/service1/Manifest.mpd`);
         }
@@ -84,15 +83,12 @@
           return Promise.resolve(response);
       }
       const player = dashjs.MediaPlayer().create();
-      player.addResponseInterceptor(interceptor)
+      player.addResponseInterceptor(interceptor);
       player.initialize(document.querySelector("#videoPlayer"), null, true);
-      player.updateSettings({
-        liveDelay: 10
-      });
       player.setMute(true);
       
       updateSate();
-      setInterval(updateSate, 2000);
+      setInterval(updateSate, 1920/2); // refresh rate = 0.5 * segment 
     })();
   </script>
 
