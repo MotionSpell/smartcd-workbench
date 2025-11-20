@@ -18,6 +18,10 @@
 		"activate": 1,
 		"check_ip": false,
 
-		"js": "/Users/ndvx/code/smart-CD/workbench/gateway/dev/service1.dev.js"
+		"js": "/Users/ndvx/code/smart-CD/workbench/gateway/dev/service1.dev.js",
+
+		"smartcd_api_endpoint": "http://127.0.0.1:3000/api",
+		"smartcd_service_software_release_urn": "urn:1b54fdfa-55da-4896-9f53-028318ad51b5",
+		"smartcd_service_computer_guid": "COMP-0"
 	}
 ]
