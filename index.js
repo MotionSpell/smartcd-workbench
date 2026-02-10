@@ -29,6 +29,10 @@ if (cfg['gateway'] && cfg['gateway'].auto) setTimeout(() => pm.start('gateway', 
 if (cfg['mabr-server'] && cfg['mabr-server'].auto) setTimeout(() => pm.start('mabr-server', commands['mabr-server'], cfg['mabr-server'].verbose), cfg['mabr-server'].delay || 8000);
 
 app.use(express.static('public'));
+app.use('/cdn/service1', express.static('tmp/avgen'));
+app.use('/cdn/service2', express.static('tmp/avgen'));
+app.use('/cdn/service3', express.static('tmp/avgen'));
+app.use('/cdn/service4', express.static('tmp/avgen'));
 
 app.get('/api/start/:name', (req, res) => {
   const name = req.params.name;
