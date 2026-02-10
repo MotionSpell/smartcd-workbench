@@ -18,7 +18,7 @@
 		"name": "service2",
 		"local": "/service2/Manifest.mpd",
 		"timeshift": 60,
-		"http": "http://192.168.1.106:9999/cdn/service2/Manifest.mpd",
+		"http": "http://192.168.1.106:3000/cdn/service2/Manifest.mpd",
 		"repair": true,
 		"js": "/data/data/com.termux/files/home/smartcd-workbench/scripts/client/plugin.js",
 		"smartcd_api_endpoint": "http://192.168.1.106:3000/api",
@@ -32,7 +32,7 @@
 		"local": "/service3/Manifest.mpd",
 		"keepalive": 4,
 		"timeshift": 60,
-		"http": "http://192.168.1.106:9999/cdn/service3/Manifest.mpd",
+		"http": "http://192.168.1.106:3000/cdn/service3/Manifest.mpd",
 		"gcache": false,
 		"mcache": false,
 		"unload": 4,
@@ -51,6 +51,6 @@
 		"name": "service4",
 		"local": "/service4/Manifest.mpd",
 		"timeshift": 60,
-		"http": "http://192.168.1.106:9999/cdn/service4/Manifest.mpd"
+		"http": "http://192.168.1.106:3000/cdn/service4/Manifest.mpd"
 	}
 ]
