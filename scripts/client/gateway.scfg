@@ -1,56 +1,34 @@
 [
 	{
 		"id": "service1",
-		"active": true,
-		"name": "service1",
-		"local": "/service1/Manifest.mpd",
 		"timeshift": 60,
-		"http": "http://192.168.1.106:3000/cdn/service1/Manifest.mpd",
-		"repair": false,
-		"js": "/data/data/com.termux/files/home/smartcd-workbench/scripts/client/plugin.js",
-		"smartcd_api_endpoint": "http://192.168.1.106:3000/api",
-		"smartcd_service_software_release_urn": "urn:1b54fdfa-55da-4896-9f53-028318ad51b5",
-		"smartcd_service_computer_guid": "COMP-0"
+		"local": "/service1/Manifest.mpd",
+		"http": "http://192.168.1.106:3000/cdn/service1/Manifest.mpd"
 	},
 	{
 		"id": "service2",
-		"active": true,
-		"name": "service2",
 		"local": "/service2/Manifest.mpd",
 		"timeshift": 60,
-		"http": "http://192.168.1.106:3000/cdn/service2/Manifest.mpd",
+		"mabr": "route://239.255.255.250:1234/:ifce=wlan0",
+		"repair": false
+	},
+	{
+		"id": "service3",
+		"local": "/service3/Manifest.mpd",
+		"timeshift": 60,
+		"http": "http://192.168.1.106:3000/cdn/service3/Manifest.mpd",
+		"mabr": "route://239.255.255.250:1234/:ifce=wlan0",
+		"repair": true
+	},
+	{
+		"id": "service4",
+		"local": "/service4/Manifest.mpd",
+		"timeshift": 60,
+		"http": "http://192.168.1.106:3000/cdn/service4/Manifest.mpd",
 		"repair": true,
 		"js": "/data/data/com.termux/files/home/smartcd-workbench/scripts/client/plugin.js",
 		"smartcd_api_endpoint": "http://192.168.1.106:3000/api",
 		"smartcd_service_software_release_urn": "urn:1b54fdfa-55da-4896-9f53-028318ad51b5",
 		"smartcd_service_computer_guid": "COMP-0"
 	},
-	{
-		"id": "service3",
-		"active": true,
-		"name": "service3",
-		"local": "/service3/Manifest.mpd",
-		"keepalive": 4,
-		"timeshift": 60,
-		"http": "http://192.168.1.106:3000/cdn/service3/Manifest.mpd",
-		"gcache": false,
-		"mcache": false,
-		"unload": 4,
-		"repair": false,
-		"corrupted": false,
-		"activate": 1,
-		"check_ip": false,
-		"js": "/data/data/com.termux/files/home/smartcd-workbench/scripts/client/plugin.js",
-		"smartcd_api_endpoint": "http://192.168.1.106:3000/api",
-		"smartcd_service_software_release_urn": "urn:1b54fdfa-55da-4896-9f53-028318ad51b5",
-		"smartcd_service_computer_guid": "COMP-0"
-	},
-	{
-		"id": "service4",
-		"active": true,
-		"name": "service4",
-		"local": "/service4/Manifest.mpd",
-		"timeshift": 60,
-		"http": "http://192.168.1.106:3000/cdn/service4/Manifest.mpd"
-	}
 ]

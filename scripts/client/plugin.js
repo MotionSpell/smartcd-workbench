@@ -98,7 +98,7 @@ function pollForMabrServerDetails(){
     } else {
         instanceMabrServerInstanceGuid = null;
         instanceMabrServerAddress = null;
-   slaposFindMabrServerInstanceID();
+        slaposFindMabrServerInstanceID();
     }
 }
 
@@ -113,14 +113,13 @@ export function init(service_config)
 
 export function service_activation(do_load, serviceID)
 {
-    // print(GF_LOG_INFO, `[${serviceID}] service_activation - do_load:${do_load}`);
+    print(GF_LOG_INFO, `[${serviceID}] service_activation - do_load:${do_load}`);
     return null;
 }
 
-// FIXME: the function is not optional
 export function quality_activation(do_activate, serviceID, periodID, adaptationSetID, representationID)
 {
-    // print(GF_LOG_INFO, `[${serviceID}] quality_activation - do_activate:${do_activate}, periodID:${periodID}, adaptationSetID:${adaptationSetID}, representationID:${representationID}`);
+    print(GF_LOG_INFO, `[${serviceID}] quality_activation - do_activate:${do_activate}, periodID:${periodID}, adaptationSetID:${adaptationSetID}, representationID:${representationID}`);
     return true;
 }
 

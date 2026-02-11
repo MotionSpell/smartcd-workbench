@@ -1,0 +1,9 @@
+[
+	{
+		"mabr": "route://239.255.255.250:1234/",
+		"local": "/service5/",
+		"timeshift": 60,
+		"repair": false,
+		"ifce": "en0"
+	}
+]

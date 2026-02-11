@@ -1,0 +1,6 @@
+[
+	{
+		"http": "http://192.168.1.106:9999/Manifest.mpd",
+		"local": "/service1/Manifest.mpd"
+	}
+]
