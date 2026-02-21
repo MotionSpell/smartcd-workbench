@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gateway Monitor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dashjs/4.7.4/dash.all.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap');
+
+  :root {
+    --bg: #0a0e14;
+    --bg2: #0d1219;
+    --bg3: #111825;
+    --border: #1e2d3d;
+    --border2: #2a3f55;
+    --accent: #00d4ff;
+    --accent2: #0088aa;
+    --accent3: #00ff99;
+    --warn: #ffaa00;
+    --err: #ff4455;
+    --text: #c8d8e8;
+    --text2: #7a9ab5;
+    --text3: #4a6a85;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Exo 2', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 18px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .logo span { color: var(--text3); }
+
+  #gw-status {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 13px;
+  }
+
+  .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--text3);
+    transition: background 0.4s;
+  }
+  .dot.online  { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); animation: pulse 2s infinite; }
+  .dot.offline { background: var(--err);     box-shadow: 0 0 8px var(--err); }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .main { display: flex; height: calc(100vh - 57px); }
+
+  /* sidebar */
+  .sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+  }
+
+  .sidebar-label {
+    padding: 16px 20px 10px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 2px;
+    color: var(--text3); text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #service-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+
+  .svc-btn {
+    display: block; width: 100%;
+    padding: 12px 20px;
+    background: none; border: none;
+    color: var(--text2); text-align: left;
+    font-family: var(--mono); font-size: 13px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .svc-btn:hover  { background: var(--bg3); color: var(--text); }
+  .svc-btn.active { color: var(--accent); border-left-color: var(--accent); background: rgba(0,212,255,0.05); }
+
+  /* content */
+  .content { flex: 1; overflow-y: auto; padding: 28px 32px; }
+
+  #unavailable-msg {
+    display: none;
+    background: rgba(255,68,85,0.08);
+    border: 1px solid var(--err);
+    border-radius: 4px;
+    padding: 20px 24px;
+    font-family: var(--mono); font-size: 13px;
+    color: var(--err);
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  #no-selection {
+    color: var(--text3); font-family: var(--mono); font-size: 14px;
+    margin-top: 60px; text-align: center;
+  }
+
+  #service-panel { display: none; }
+
+  /* section */
+  .section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .section-header {
+    padding: 8px 18px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 11px; letter-spacing: 2px;
+    color: var(--text3); text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between;
+    min-height: 38px;
+  }
+
+  /* merged title + big count in header */
+  .hdr-left { display: flex; align-items: baseline; gap: 10px; }
+  .hdr-count { font-size: 16px; letter-spacing: 1px; color: var(--accent); line-height: 1; }
+
+  .section-body         { padding: 14px 18px; }
+  .section-body.compact { padding: 10px 18px; }
+
+  /* stats bars */
+  .stat-row { display: flex; align-items: center; gap: 12px; margin-bottom: 7px; }
+  .stat-row:last-child { margin-bottom: 0; }
+  .stat-label { font-family: var(--mono); font-size: 12px; color: var(--text3); width: 80px; flex-shrink: 0; }
+  .stat-bar-wrap { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .stat-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; background: var(--accent); }
+  .stat-bar.mcast   { background: var(--accent3); }
+  .stat-bar.offedge { background: var(--warn); }
+  .stat-val { font-family: var(--mono); font-size: 12px; color: var(--text); min-width: 70px; text-align: right; }
+
+  /* toggle */
+  .toggle-wrap  { display: flex; align-items: center; gap: 8px; }
+  .toggle-label { font-family: var(--mono); font-size: 11px; color: var(--text3); letter-spacing: 1px; }
+  .toggle {
+    position: relative; width: 36px; height: 18px;
+    background: var(--border2); border-radius: 9px; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle.on { background: var(--accent2); }
+  .toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--text3); transition: all 0.2s;
+  }
+  .toggle.on::after { left: 21px; background: var(--accent); }
+
+  /* player */
+  .section-body #dash-video { width: 100%; max-height: 380px; background: #000; display: block; border-radius: 2px; }
+  .src-select { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .src-btn {
+    padding: 7px 16px; font-family: var(--mono); font-size: 12px;
+    border: 1px solid var(--border2); background: var(--bg3);
+    color: var(--text2); cursor: pointer; border-radius: 3px;
+    transition: all 0.2s; letter-spacing: 0.5px;
+  }
+  .src-btn:hover  { border-color: var(--accent2); color: var(--text); }
+  .src-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.06); }
+
+  /* badge */
+  .badge {
+    display: inline-block; padding: 2px 8px;
+    border-radius: 3px; font-size: 11px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  .badge-yes { background: rgba(0,255,153,0.12); color: var(--accent3); border: 1px solid rgba(0,255,153,0.3); }
+  .badge-no  { background: rgba(255,68,85,0.1);  color: var(--err);     border: 1px solid rgba(255,68,85,0.3); }
+
+  /* app control */
+  .app-row { display: flex; align-items: center; gap: 16px; }
+  .ctrl-btn {
+    padding: 9px 22px; font-family: var(--mono); font-size: 13px;
+    border: 1px solid; border-radius: 3px; cursor: pointer;
+    letter-spacing: 1px; text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .ctrl-btn.start       { border-color: var(--accent3); color: var(--accent3); background: rgba(0,255,153,0.05); }
+  .ctrl-btn.start:hover { background: rgba(0,255,153,0.12); }
+  .ctrl-btn.stop        { border-color: var(--err); color: var(--err); background: rgba(255,68,85,0.05); }
+  .ctrl-btn.stop:hover  { background: rgba(255,68,85,0.12); }
+  .ctrl-btn:disabled    { opacity: 0.4; cursor: not-allowed; }
+  .app-status-label { font-family: var(--mono); font-size: 13px; }
+  .mabr-addr { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 8px; word-break: break-all; }
+
+  /* JSON textarea */
+  .json-field {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 12px 14px;
+    resize: vertical;
+    min-height: 240px;
+    outline: none;
+  }
+  .json-field:focus { border-color: var(--border2); }
+
+  .poll-indicator {
+    font-family: var(--mono); font-size: 11px; color: var(--text3);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .spin {
+    width: 8px; height: 8px; border: 1px solid var(--text3);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">GATEWAY<span> //</span> MONITOR</div>
+  <div id="gw-status">
+    <div class="dot" id="gw-dot"></div>
+    <span id="gw-status-text">CONNECTING…</span>
+    <div class="poll-indicator"><div class="spin"></div>POLLING</div>
+  </div>
+</header>
+
+<div class="main">
+  <aside class="sidebar">
+    <div class="sidebar-label">Services</div>
+    <div id="service-list">
+      <div style="padding:16px 20px;font-family:var(--mono);font-size:12px;color:var(--text3)">—</div>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div id="unavailable-msg"></div>
+    <div id="no-selection">← Select a service</div>
+
+    <div id="service-panel">
+
+      <!-- Video Player -->
+      <div class="section">
+        <div class="section-header">Video Player</div>
+        <div class="section-body">
+          <div class="src-select" id="src-btns"></div>
+          <video id="dash-video" controls></video>
+        </div>
+      </div>
+
+      <!-- MABR Application -->
+      <div class="section">
+        <div class="section-header">MABR Application</div>
+        <div class="section-body">
+          <div class="app-row">
+            <span class="app-status-label" id="app-status-label">—</span>
+            <button class="ctrl-btn start" id="ctrl-btn" onclick="toggleApp()" disabled>—</button>
+          </div>
+          <div class="mabr-addr" id="mabr-addr"></div>
+        </div>
+      </div>
+
+      <!-- Served Requests — merged header with count -->
+      <div class="section">
+        <div class="section-header">
+          <div class="hdr-left">
+            <span>Served Requests</span>
+            <span class="hdr-count" id="served-total">0</span>
+          </div>
+          <div class="toggle-wrap">
+            <span class="toggle-label">%</span>
+            <div class="toggle off" id="served-toggle" onclick="toggleServed()"></div>
+          </div>
+        </div>
+        <div class="section-body compact" id="served-bars"></div>
+      </div>
+
+      <!-- Cache Size — merged header with size -->
+      <div class="section">
+        <div class="section-header">
+          <div class="hdr-left">
+            <span>Cache Size</span>
+            <span class="hdr-count" id="cache-size">0</span>
+          </div>
+          <div class="toggle-wrap">
+            <span class="toggle-label">%</span>
+            <div class="toggle off" id="cache-toggle" onclick="toggleCache()"></div>
+          </div>
+        </div>
+        <div class="section-body compact" id="cache-bars"></div>
+      </div>
+
+      <!-- Cache Size — merged header with size -->
+      <div class="section">
+        <div class="section-header">
+          <div class="hdr-left">
+            <span>MABR packets</span>
+            <span class="hdr-count" id="mabr-received">0</span>
+          </div>
+          <div class="toggle-wrap">
+            <span class="toggle-label">%</span>
+            <div class="toggle off" id="mabr-repair-toggle" onclick="toggleRepairStats()"></div>
+          </div>
+        </div>
+        <div class="section-body compact" id="mabr-bars"></div>
+      </div>
+
+      <!-- Service Info (JSON, last) -->
+      <div class="section">
+        <div class="section-header">Service Info</div>
+        <div class="section-body">
+          <textarea class="json-field" id="info-json" readonly spellcheck="false"></textarea>
+        </div>
+      </div>
+
+    </div><!-- /service-panel -->
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+const GATEWAY            = 'http://127.0.0.1:8081';
+const POLL_INTERVAL      = 3000;
+const ORCH_POLL_INTERVAL = 3000;
+
+let statsData       = null;
+let orchData        = null;
+let selectedService = null;
+let servedPct       = false;    // default OFF
+let cachePct        = false;    // default OFF
+let dashPlayer      = null;
+let currentSrc      = null;
+let firstPollDone   = false;
+
+// Read anchor once at startup
+const anchorId = window.location.hash ? decodeURIComponent(window.location.hash.slice(1)) : null;
+
+// ── Polling ──────────────────────────────────────────────────────────────────
+
+async function pollGateway() {
+  try {
+    const res  = await fetch(`${GATEWAY}/stats`);
+    const text = await res.text();
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.body}`);
+    const json = JSON.parse(text);
+    setGwOnline();
+    applyStats(json);
+  } catch (e) {
+    setGwOffline(e);
+    console.error(e);
+  }
+  setTimeout(pollGateway, POLL_INTERVAL);
+}
+
+async function pollOrch() {
+  try {
+    const res = await fetch(`/api/status`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.body}`);
+    orchData = await res.json();
+    updateAppUI();
+  } catch (e) { 
+    console.error(e); 
+  }
+  setTimeout(pollOrch, ORCH_POLL_INTERVAL);
+}
+
+// ── Gateway status ────────────────────────────────────────────────────────────
+
+function setGwOnline() {
+  document.getElementById('unavailable-msg').style.display = 'none';
+  document.getElementById('gw-dot').className = 'dot online';
+  document.getElementById('gw-status-text').textContent = 'GATEWAY ONLINE';
+}
+
+function setGwOffline(e) {
+  document.getElementById('gw-dot').className = 'dot offline';
+  document.getElementById('gw-status-text').textContent = 'GATEWAY OFFLINE';
+  const msg = document.getElementById('unavailable-msg');
+  msg.style.display = 'block';
+  msg.textContent = `GATEWAY UNAVAILABLE — ${e.message || e}`;
+}
+
+// ── Stats rendering ───────────────────────────────────────────────────────────
+
+function applyStats(data) {
+  statsData = data;
+
+  // Validate config vs stats
+  if (data.config && data.status) {
+    data.config.forEach(c => {
+      if (!data.status[c.id])
+        console.warn(`[monitor] Config references service "${c.id}" but no stats entry found.`);
+    });
+  }
+
+  // Rebuild sidebar
+  const list   = document.getElementById('service-list');
+  const svcIds = Object.keys(data.status || {});
+  list.innerHTML = '';
+  svcIds.forEach(id => {
+    const btn = document.createElement('button');
+    btn.className  = 'svc-btn' + (id === selectedService ? ' active' : '');
+    btn.textContent = id;
+    btn.onclick    = () => selectService(id);
+    list.appendChild(btn);
+  });
+
+  // On very first successful poll, auto-select anchor service if valid
+  if (!firstPollDone) {
+    firstPollDone = true;
+    if (anchorId && data.status && data.status[anchorId]) {
+      selectService(anchorId);
+      return; // selectService calls renderServicePanel already
+    }
+  }
+
+  if (selectedService && data.status[selectedService]) {
+    renderServicePanel(selectedService, data.status[selectedService]);
+  }
+}
+
+function selectService(id) {
+  selectedService = id;
+  document.querySelectorAll('.svc-btn').forEach(b => b.classList.toggle('active', b.textContent === id));
+  document.getElementById('no-selection').style.display  = 'none';
+  document.getElementById('service-panel').style.display = 'block';
+
+  // Reflect in URL anchor
+  history.replaceState(null, '', `#${encodeURIComponent(id)}`);
+  let s = statsData.status[id];
+  if (statsData && s) {
+    renderServicePanel(id, s)
+    // Player — LOCAL first, then HTTP ORIGIN; auto-load LOCAL
+    const localUrl = `${GATEWAY}${s.local}`;
+    buildPlayerSources(localUrl, s.httpOrigin);  
+  };
+  updateAppUI();
+}
+
+function renderServicePanel(id, s) {
+  // Served requests
+  document.getElementById('served-total').textContent = s.servedRequests.toLocaleString();
+  renderBars('served-bars', s.servedFrom, s.servedRequests, servedPct, {
+    http:       { label: 'HTTP',     cls: '' },
+    mcast:      { label: 'MCAST',    cls: 'mcast' },
+    'off-edge': { label: 'OFF-EDGE', cls: 'offedge' }
+  });
+
+  // Cache
+  document.getElementById('cache-size').textContent = s.cacheSize.toLocaleString();
+  renderBars('cache-bars', s.cache, s.cacheSize, cachePct, {
+    mabr: { label: 'MABR', cls: 'mcast' },
+    http: { label: 'HTTP', cls: '' }
+  });
+
+  // mabr Stats
+  document.getElementById('mabr-received').textContent = s.mabrRepairStats.received.toLocaleString();
+  renderBars('mabr-bars', s.mabrRepairStats, s.mabrRepairStats.received, cachePct, {
+    corrupted: { label: 'corrupted', cls: 'corrupted' },
+    partialRepair: { label: 'partial repair', cls: 'partialRepair' },
+    brokenData: { label: 'broken data', cls: 'brokenData' }
+  });
+
+  const infoObj = {
+    serviceId:      id,
+    ...s
+  };
+  document.getElementById('info-json').value = JSON.stringify(infoObj, null, 2);
+}
+
+function renderBars(containerId, values, total, pct, defs) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  Object.entries(defs).forEach(([key, { label, cls }]) => {
+    const val      = (values && values[key] != null) ? values[key] : 0;
+    const pctVal   = total > 0 ? (val / total * 100) : 0;
+    const display  = pct ? pctVal.toFixed(1) + '%' : val.toLocaleString();
+    const barWidth = Math.min(100, pctVal).toFixed(1);
+    el.innerHTML += `
+      <div class="stat-row">
+        <div class="stat-label">${label}</div>
+        <div class="stat-bar-wrap"><div class="stat-bar ${cls}" style="width:${barWidth}%"></div></div>
+        <div class="stat-val">${display}</div>
+      </div>`;
+  });
+}
+
+// ── Toggles ───────────────────────────────────────────────────────────────────
+
+function toggleServed() {
+  servedPct = !servedPct;
+  document.getElementById('served-toggle').classList.toggle('on', servedPct);
+  if (selectedService && statsData) renderServicePanel(selectedService, statsData.status[selectedService]);
+}
+
+function toggleCache() {
+  cachePct = !cachePct;
+  document.getElementById('cache-toggle').classList.toggle('on', cachePct);
+  if (selectedService && statsData) renderServicePanel(selectedService, statsData.status[selectedService]);
+}
+
+function toggleRepairStats() {
+  repairPct = !repairPct;
+  document.getElementById('mabr-repair-toggle').classList.toggle('on', repairPct);
+  if (selectedService && statsData) renderServicePanel(selectedService, statsData.status[selectedService]);
+}
+
+// ── Player ────────────────────────────────────────────────────────────────────
+
+function buildPlayerSources(localUrl, httpOrigin) {
+  const sources = [
+    { label: 'LOCAL (GATEWAY)', url: localUrl  },
+    { label: 'HTTP ORIGIN',     url: httpOrigin }
+  ];
+
+  const wrap = document.getElementById('src-btns');
+  wrap.innerHTML = '';
+  let localBtn = null;
+  sources.forEach((src, i) => {
+    const btn = document.createElement('button');
+    btn.className  = 'src-btn';
+    btn.textContent = src.label;
+    btn.title      = src.url;
+    btn.onclick    = () => loadSource(src.url, btn);
+    wrap.appendChild(btn);
+    if (i === 0) localBtn = btn;
+  });
+
+  // Always auto-load LOCAL when rendering the panel
+  loadSource(localUrl, localBtn);
+}
+
+function loadSource(url, btn) {
+  currentSrc = url;
+  document.querySelectorAll('.src-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  const video = document.getElementById('dash-video');
+  if (dashPlayer) { try { dashPlayer.destroy(); } catch (e) {} dashPlayer = null; }
+
+  dashPlayer = dashjs.MediaPlayer().create();
+  dashPlayer.initialize(video, url, true);
+  dashPlayer.updateSettings(
+    { 
+      streaming: { 
+        abr: { 
+          autoSwitchBitrate: { 
+            video: true 
+          } 
+        },
+        delay: {
+            liveDelayFragmentCount: NaN,
+            liveDelay: NaN,
+            useSuggestedPresentationDelay: true
+        },
+        liveCatchup: {
+            enabled: false
+        }
+      } 
+    });
+}
+
+// ── App Control ───────────────────────────────────────────────────────────────
+
+function updateAppUI() {
+  if (!selectedService) return;
+  const btn  = document.getElementById('ctrl-btn');
+  const lbl  = document.getElementById('app-status-label');
+  const addr = document.getElementById('mabr-addr');
+
+  btn.disabled = false;
+  const svcOrch = orchData?.mcast?.[selectedService];
+  const running = orchData?.processes?.[selectedService] == "running";;
+
+  if (running) {
+    lbl.innerHTML   = '<span class="badge badge-yes">RUNNING</span>';
+    btn.textContent = 'STOP';
+    btn.className   = 'ctrl-btn stop';
+    addr.textContent = svcOrch?.mabrAddress ? `Address: ${svcOrch?.mabrAddress}` : '';
+  } else {
+    lbl.innerHTML   = '<span class="badge badge-no">STOPPED</span>';
+    btn.textContent = 'START';
+    btn.className   = 'ctrl-btn start';
+    addr.textContent = '';
+  }
+
+}
+
+async function toggleApp() {
+  if (!selectedService) return;
+  const btn    = document.getElementById('ctrl-btn');
+  const action = orchData.processes[selectedService] == "running" ? 'stop' : 'start';
+  btn.disabled = true;
+  try {
+    if (action == 'start'){
+      const mcast_cfg = orchData.mcast_cfg.find(e => e.message_id == selectedService);
+      const res = await fetch(`/api/mcast/${action}/${selectedService}`, { method: 'POST', body: JSON.stringify(mcast_cfg) });
+      if (!res.ok) console.error(`[monitor] ${action} failed: ${res.status} ${await res.text()}`);
+    } else {
+      const mcast_cfg = orchData.mcast_cfg.find(e => e.message_id == selectedService);
+      const res = await fetch(`/api/mcast/${action}/${selectedService}`, { method: 'POST' });
+      if (!res.ok) console.error(`[monitor] ${action} failed: ${res.status} ${await res.text()}`);
+    };
+    const r2 = await fetch(`/api/status`);
+    if (r2.ok) orchData = await r2.json();
+  } catch (e) {
+    console.error(`[monitor] ${action} error:`, e);
+  } finally {
+    updateAppUI();
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+pollGateway();
+pollOrch();
+</script>
+</body>
+</html>

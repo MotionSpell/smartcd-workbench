@@ -6,22 +6,18 @@ export default class ProcessManager {
     this.processes = {};
   }
 
-  commandNames(){
-    return ['avgen', 'gateway', 'mabr-server']
-  }
-
   buildCommands(cfg) {
-    const avgenCmd = `gpac -lu -logs=ncl:all@info -i avgen:fps=25:sr=48000 ffenc:c=avc:x264-params=keyint=48:min-keyint=48:no-scenecut ffenc:c=aac -o ${cfg.avgen.uri}:segdur=1.92:profile=live:dmode=dynamic:tsb=3600:spd=10:maxp=0:maxc=0:rdirs=${cfg.avgen.rdirs}`;
-    const gatewayCmd = `gpac -lu -logs=ncl:all@info mediaserver:port=${cfg.gateway.port}:scfg=${cfg.gateway.scfg}`;
+    const avgenCmd = `gpac -lu -logs=ncl:all@warning -i avgen:fps=25:sr=48000 ffenc:c=avc:x264-params=keyint=48:min-keyint=48:no-scenecut ffenc:c=aac reframer:rt=on -o ${cfg.avgen.uri}:segdur=1.92:profile=live:dmode=dynamic:stl:tsb=3600:maxp=0:maxc=0:rdirs=${cfg.avgen.rdirs}`;
+    const gatewayCmd = `gpac -lu -logs=ncl:all@warning:script:console@info mediaserver:port=${cfg.gateway.port}:scfg=${cfg.gateway.scfg}:rdirs=${cfg.gateway.rdirs}`;
     const mabrOrigin = cfg['mabr-server'].origin === 'avgen' ? cfg.avgen.uri : cfg['mabr-server'].origin;
-    const mabrCmd = `gpac -lu -logs=ncl:all@info -i ${mabrOrigin} dashin:forward=file -o ${cfg['mabr-server'].output}`;
+    const mabrCmd = `gpac -lu -logs=ncl:all@warning -i ${mabrOrigin} dashin:forward=file:split_as -o ${cfg['mabr-server'].output}`;
     return { avgen: avgenCmd, gateway: gatewayCmd, 'mabr-server': mabrCmd };
   }
 
   start(name, command, verbose) {
     console.log(`Starting [${name}]: ${command})`);
     if (this.processes[name]?.status == 'running') return { status: 'already running' };
-    const worker = new Worker(path.resolve('processes/worker.js'), {
+    const worker = new Worker(path.resolve('./src/processes/worker.js'), {
       workerData: { name, command, verbose }
     });
     this.processes[name] = { worker, status: 'running' };
@@ -48,7 +44,7 @@ export default class ProcessManager {
 
   status() {
     const res = {};
-    for (let name of this.commandNames()){
+    for (const [name, p] of Object.entries(this.processes)){
       res[name] = name in this.processes ? this.processes[name].status : 'stopped';
     }
 

@@ -1,0 +1,35 @@
+[
+	{
+		"id": "service1",
+		"timeshift": 60,
+		"local": "/service1/Manifest.mpd",
+		"http": "http://127.0.0.1:3000/cdn/service1/Manifest.mpd"
+	},
+	{
+		"id": "service2",
+		"local": "/service2/Manifest.mpd",
+		"timeshift": 60,
+		"mabr": "route://239.255.255.250:1234/:ifce=127.0.0.1",
+		"repair": false
+	},
+	{
+		"id": "service3",
+		"local": "/service3/Manifest.mpd",
+		"timeshift": 60,
+		"http": "http://127.0.0.1:3000/cdn/service3/Manifest.mpd",
+		"mabr": "route://239.255.255.250:1234/:ifce=127.0.0.1",
+		"repair": true
+	},
+	{
+		"id": "service4",
+		"local": "/service4/Manifest.mpd",
+		"timeshift": 60,
+		"http": "http://127.0.0.1:3000/cdn/service4/Manifest.mpd",
+		"repair": true,
+		"js": "/gateway/gateway.scfg/plugin.js",
+		"smartcd_mabr_ifce": ":ifce=127.0.0.1",
+		"smartcd_api_endpoint": "http://127.0.0.1:3000/api",
+		"smartcd_service_software_release_urn": "urn:1b54fdfa-55da-4896-9f53-028318ad51b5",
+		"smartcd_service_computer_guid": "COMP-0"
+	}
+]

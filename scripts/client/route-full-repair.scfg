@@ -1,9 +1,0 @@
-[
-	{
-		"mabr": "route://239.255.255.250:1234/",
-		"http": "http://192.168.1.106:9999/Manifest.mpd",
-		"local": "/service1/Manifest.mpd",
-		"repair": true,
-		"ifce": "en0"
-	}
-]

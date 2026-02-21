@@ -1,0 +1,24 @@
+port: 3000
+host: 127.0.0.1
+
+mcast:
+  - service_id: "service1"
+    http_origin: "https://live-linear.dvb.org/livesim2/tsbd_30/spd_4/utc_httpisoms/start_1735689600/1001_vvc_hd_sdr_heaac/manifest_livesim.mpd"
+    mcast_output: "route://239.255.255.250:1234/:ifce=127.0.0.1"
+    slapos_computer_guid: "COMP-1"
+  - service_id: "service2"
+    mcast_output: "route://239.255.255.250:1235/:ifce=127.0.0.1"
+    slapos_computer_guid: "COMP-2"
+  - service_id: "service3"
+    http_origin: "https://live-linear.dvb.org/livesim2/tsbd_30/spd_4/utc_httpisoms/start_1735689600/1005_av1_hd_sdr_heaac/manifest_livesim.mpd"
+    mcast_output: "route://239.255.255.250:1236/:ifce=127.0.0.1"
+    slapos_computer_guid: "COMP-3"
+  - service_id: "service4"
+    http_origin: "https://live-linear.dvb.org/livesim2/tsbd_30/spd_4/utc_httpisoms/start_1735689600/1003_avc_hd_sdr_mpegh/manifest_livesim.mpd"
+    mcast_output: "route://239.255.255.250:1237/:ifce=127.0.0.1"
+    slapos_computer_guid: "COMP-4"
+
+gateway:
+  port: 8081
+  scfg: ./cfg/local/route.scfg
+  rdirs: ./tmp/gateway
