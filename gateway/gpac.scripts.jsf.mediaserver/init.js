@@ -570,7 +570,6 @@ function initGatewayStats(services_defs) {
     for (const svc of services_defs) {
         stats[svc.id] = {
             local: svc.local,
-            startedAt: 0,
             httpOrigin: svc.http || null,
             mcastOrigin: svc.mabr || null,
             dynMabr: svc.dyn_mabr ?? false,
@@ -584,6 +583,7 @@ function initGatewayStats(services_defs) {
             },
 			mabrRepairStats: {
 				received: 0,
+				wholeFile: 0,
 				corrupted: 0,
 				partialRepair: 0,
 				brokenData: 0
@@ -594,33 +594,46 @@ function initGatewayStats(services_defs) {
 }
 
 function trackMabrPacketIn(svcId){
-	gatewayStats[svcId].mabrRepairStats.received++;
+	if (gatewayStats[svcId] && gatewayStats[svcId].mabrRepairStats) 
+		gatewayStats[svcId].mabrRepairStats.received++;
+}
+
+function trackMabrPacketAsWholeFile(svcId){
+	if (gatewayStats[svcId] && gatewayStats[svcId].mabrRepairStats) 
+		gatewayStats[svcId].mabrRepairStats.wholeFile++;
 }
 
 function trackCorruptedMabrPacketIn(svcId){
-	gatewayStats[svcId].mabrRepairStats.corrupted++;
+	if (gatewayStats[svcId] && gatewayStats[svcId].mabrRepairStats) 
+		gatewayStats[svcId].mabrRepairStats.corrupted++;
 }
 
 function trackPartialRepairIn(svcId){
-    gatewayStats[svcId].mabrRepairStats.partialRepair++;
+	if (gatewayStats[svcId] && gatewayStats[svcId].mabrRepairStats) 
+		gatewayStats[svcId].mabrRepairStats.partialRepair++;
 }
 
 function trackBrokenDataOut(svcId){
-	gatewayStats[svcId].mabrRepairStats.brokenData++;
+	if (gatewayStats[svcId] && gatewayStats[svcId].mabrRepairStats) 
+		gatewayStats[svcId].mabrRepairStats.brokenData++;
 }
 
 function trackRequestServedFromMABR(svcId) {
-    gatewayStats[svcId].servedRequests++;
-	gatewayStats[svcId].servedFrom.mcast++;
+	if (gatewayStats[svcId]) {
+		gatewayStats[svcId].servedRequests++;
+		gatewayStats[svcId].servedFrom.mcast++;		
+	}
 }
 
 function trackRequestServedFromHTTP(svcId) {
-    gatewayStats[svcId].servedRequests++;
-	gatewayStats[svcId].servedFrom.http++;
+	if (gatewayStats[svcId]) {
+		gatewayStats[svcId].servedRequests++;
+		gatewayStats[svcId].servedFrom.http++;
+	}
 }
 
-function trackOffEdge(serviceObject) {
-    gatewayStats[serviceObject.id].servedFrom["off-edge"]++;
+function trackOffEdge(svcId) {
+    if (gatewayStats[svcId]) gatewayStats[svcId].servedFrom["off-edge"]++;
 }
 
 function getServiceStatus(serviceStats, serviceObject) {
@@ -690,6 +703,7 @@ httpout.on_request = (req) =>
 
 	if (req.url.startsWith('/stats')){
 		req.reply = 200;
+		req.setRequestHeader("Content-Type", "application/json");
 		req.body = JSON.stringify(gatewayStatus());
 		req.send();
 		return;
@@ -1036,11 +1050,13 @@ httpout.on_request = (req) =>
 			req.reply = req.xhr.status;
 			if (req.manifest_type == 0 && req.service && req.service.mabr) {
 				const val = req.live_edge ? 'no' : 'off-edge';
-				if (val == 'off-edge') trackOffEdge(req.service);
+				if (val == 'off-edge') trackOffEdge(req.service.id);
 				req.headers_out.push( { "name" : 'X-From-MABR', "value": val} );
 			}
 			req.send();
-			trackRequestServedFromHTTP(req.service);
+			if (req.service) { // on initial manifest, request serivce isn't loaded
+				trackRequestServedFromHTTP(req.service.id);
+			}
 			
 			if (req.cache_file) {
 				req.cache_file.xhr_status = req.reply;
@@ -1056,6 +1072,8 @@ httpout.on_request = (req) =>
 					req.cache_file.pending_reqs.forEach(r => r.flush_request() );
 					req.cache_file.pending_reqs = null;
 				}
+			} else {
+				do_log(GF_LOG_WARNING, `Request without cache file: ${req.target_url}`);
 			}
 		};
 		this.xhr.open(this.method, this.target_url);
@@ -1681,20 +1699,18 @@ function create_service(http_url, force_mcast_activate, forced_sdesc)
 		//		only do this if HTTP mirror - otherwise, activate everything to make sure we fetch the manifests and init segments
 		if (this.url && this.mabr_min_active>0) args += ':tunein=-3';
 		//add repair option last
-		if (!this.url) { // no explicit unicast origin
-			if (!this.repair) { // no unicast repair
-				args += ':repair=strict'; // incomplete mdat boxes will be lost as well as preceding moof boxes
-				this.repair = 1;
-			} else {
-				args += ':repair=full'; // use repair url signaled in mABR if applicatble
+		if (!this.repair) { // false (default) - disable unicast repair
+			args += this.corrupted ? ':repair=simple' : ':repair=strict'; // forward corrupted files if parsable (valid container syntax, broken media)
+			this.repair = 1;
+		} else if (this.repair == 1) { // true
+			args += ':repair=full';
+			if (this.url) {
+				args += '::repair_urls='+this.url;
 			}
+		} else if (this.repair == 2) { // auto - repair only from repair servers indicated in MABR
+			args += ':repair=full';
 		}
-		else if (this.repair) { // explicit unicast origin + repair
-			//escape URL option
-			args += ':repair=full::repair_urls='+this.url; // explicit repair url
-		} else if (s.corrupted) { // forward corrupted files if parsable (valid container syntax, broken media)
-			args += ':repair=strict'; // incomplete mdat boxes will be lost as well as preceding moof boxes
-		}
+		do_log(GF_LOG_DEBUG, `Service ${s.id} MABR config: ${args}`);
 
 		this.source = session.add_filter(args);
 		if (!this.source) {
@@ -1789,17 +1805,25 @@ function create_service(http_url, force_mcast_activate, forced_sdesc)
 		this.push_to_cache = function (pid, pck) {
 			let file = this.mem_cache.find(f => f.url===pid.url);
 			let corrupted = pck.corrupted ? 1 : 0;
-			trackMabrPacketIn(s.id);
+			trackMabrPacketIn(this.id);
 			if (corrupted){
-				trackCorruptedMabrPacketIn(s.id);
+				trackCorruptedMabrPacketIn(this.id);
 				if (pck.get_prop('PartialRepair')) {
-					trackPartialRepairIn(s.id);
-					corrupted = s.corrupted ? 0 : 2;
+					trackPartialRepairIn(this.id);
+					corrupted = 2;
+					if (this.corrupted) { // forward valid container syntax, broken media
+						trackBrokenDataOut(this.id);
+						corrupted = 0;
+						do_log(GF_LOG_WARNING, `MABR Repair failed for ${pid.url} (valid container ${corrupted==2}), broken data sent to client`);
+					}
+
 				}
 			}
+
 			//file corrupted and no repair, move to HTTP
-			if (!s.repair && corrupted) {
+			if (!this.repair && corrupted) {
 				let log_done = false;
+
 				//cache file shall never be created at this point since we only aggregate full files when no repair
 				if (file) {
 					do_log(GF_LOG_ERROR, `Service ${this.id} receiving corrupted MABR packet and cache file was already setup, bug in code !`);
@@ -1827,10 +1851,8 @@ function create_service(http_url, force_mcast_activate, forced_sdesc)
 					do_log(GF_LOG_INFO, `Corrupted MABR packet for ${pid.url} (valid container ${corrupted==2}), removing`);
 				}
 				return;
-			} else if (corrupted) {
-				trackBrokenDataOut(s.id);
-				do_log(GF_LOG_WARNING, `MABR Repair failed for ${pid.url} (valid container ${corrupted==2}), broken data sent to client`);
 			}
+			
 			if (!file) {
 				file = this.create_cache_file(pid.url, pid.mime, 0, 0, CACHE_TYPE_MABR, pid);
 			}
@@ -1851,7 +1873,7 @@ function create_service(http_url, force_mcast_activate, forced_sdesc)
 
 			do_log(GF_LOG_INFO, `Service ${this.id} receiving MABR packet for ${pid.url} size ${pck.size} end ${pck.end}`);
 
-			//rearegate packget
+			//reaggregate packet
 			if (pck.size) {
 				if (file.data_tmp)
 					file.data_tmp = cat_buffer(file.data_tmp, pck.data);
@@ -1859,6 +1881,7 @@ function create_service(http_url, force_mcast_activate, forced_sdesc)
 					file.data = cat_buffer(file.data, pck.data);
 			}
 			if (pck.start && pck.end) {
+				trackMabrPacketAsWholeFile(this.id);
 				do_log(GF_LOG_INFO, `Service ${this.id} got MABR file ${pid.url} in one packet`);
 			}
 			else if (pck.start) {
