@@ -1,7 +1,4 @@
 import {XMLHttpRequest} from 'xhr';
-import { Sys as sys } from 'gpaccore'
-
-const cacheBurst = () => sys.clock_ms();
 
 class DynMABR {
     
@@ -16,12 +13,7 @@ class DynMABR {
     }
 
     static getServiceByUrl(url){
-        print(GF_LOG_WARNING, `[gateway] ${DynMABR.all} services - getServiceByUrl ${url}`);
-        return DynMABR.all.find(e => {
-            print(GF_LOG_WARNING, `[gateway] == ${url}`);
-            print(GF_LOG_WARNING, `[gateway] != ${e.service_config.http}`);
-            return e.service_config.http == url;
-        });
+        return DynMABR.all.find(e => e.service_config.http == url);
     }
 
     constructor (service_config){
@@ -33,21 +25,20 @@ class DynMABR {
     }
 
     log(level, msg){
-        print(level, `[gateway/${this.service_config.id}] ${msg}`);
+        print(level, `[${this.service_config.id}] ${msg}`);
     }
 
     getMCastAddress(){
         if (this.polling?.readyState == 4 && ((sys.clock_ms() - this.mcastServerLastCheckMs) < 5000)){
-            this.log(GF_LOG_WARNING, `get_mcast_address() throttling`);
             return this.instanceMabrServerAddress;
         }
         
         if (!this.polling){
             if (!this.instanceMabrServerInstanceGuid) {
-                this.log(GF_LOG_WARNING, `get_mcast_address() 1/2 - fetch instance GUID`);
+                this.log(GF_LOG_DEBUG, `fetching instance GUID from slapos`);
                 this.polling = this.slaposFindMabrServerInstanceID();
             } else {
-                this.log(GF_LOG_WARNING, `get_mcast_address() 2/2 - fetch server address - ${sys.clock_ms() - this.mcastServerLastCheckMs}ms`);
+                this.log(GF_LOG_DEBUG, `fetching mcast server address from slapos`);
                 this.slaposGetMabrServerAddress();
                 this.mcastServerLastCheckMs = sys.clock_ms();
             }
@@ -57,32 +48,28 @@ class DynMABR {
 
     slaposFindMabrServerInstanceID(){
         const req = new XMLHttpRequest();
-        // const s = this;
 
         req.onreadystatechange = () => {
-           this.log(GF_LOG_WARNING, `1/2 - slaposFindMabrServerInstanceID - onreadystatechange: ${req.readyState}`);
             if (req.readyState === 4) {
                 let instanceGuid = null;
                 const ok = req.status >= 200 && req.status < 300;
                 if (ok){
-                    this.log(GF_LOG_WARNING, `fetched compute_node_instance_list`);
                     try {
                         const results = JSON.parse(req.responseText)["result_list"];
                         if (results){
                             for (let res of results){
-                                this.log(GF_LOG_WARNING, `instance_guid: ${res["instance_guid"]}`);
                                 if (res["state"] == "started"){
                                     instanceGuid = res["instance_guid"];
-                                    this.log(GF_LOG_WARNING, `fetched slapos instance GUID: ${instanceGuid}`);
+                                    this.log(GF_LOG_DEBUG, `fetched slapos instance GUID: ${instanceGuid}`);
                                     break;
                                 }
                             }
                         }
                     } catch (err) {
-                        this.log(GF_LOG_WARNING, `invalid response payload: ${err}`);
+                        this.log(GF_LOG_WARNING, `received invalid json payload from slapos: ${err}`);
                     }
                 } else {
-                    this.log(GF_LOG_WARNING, `failed to fetch instance GUID from slapos: ${req.status}`);
+                    this.log(GF_LOG_INFO, `failed to fetch GUID from slapos: ${req.status}`);
                 }
                 this.instanceMabrServerInstanceGuid = instanceGuid;
                 this.polling = null;
@@ -90,11 +77,11 @@ class DynMABR {
         };
     
         req.onerror = (e) => {
-            this.log(GF_LOG_WARNING, `slaposFindMabrServerInstanceID.onerror - ${req.readyState} - ${req.status} - ${req.statusText}`);
+            this.log(GF_LOG_WARNING, `failed to fetch GUID from slapos`);
             callback(false, e);
         };
 
-        const uri = `${this.service_config.smartcd_api_endpoint}/slapos.allDocs.v0.compute_node_instance_list?cacheburst=${cacheBurst()}`;
+        const uri = `${this.service_config.smartcd_api_endpoint}/slapos.allDocs.v0.compute_node_instance_list?cacheburst=${sys.clock_ms()}`;
         req.open("POST", uri);
         req.setRequestHeader("Content-Type", "application/json");
         req.send(JSON.stringify({
@@ -109,23 +96,21 @@ class DynMABR {
         const req = new XMLHttpRequest();
 
         req.onreadystatechange = () => {
-            s.log(GF_LOG_WARNING, `2/2 - slaposGetMabrServerAddress - onreadystatechange: ${req.readyState}`);
             if (req.readyState === 4) {
                 let address = null;
                 const ok = req.status >= 200 && req.status < 300;
-                s.log(GF_LOG_WARNING, `fetched mcast server address`);
                 if (ok){
                     try {
                         const connectionParams = JSON.parse(req.responseText)["connection_parameters"];
                         if (connectionParams){
                             address = connectionParams["route-server-ipv6"] || null;
-                            s.log(GF_LOG_WARNING, `fetched mcast server adress from slapos: ${address}`);
+                            s.log(GF_LOG_DEBUG, `fetched mcast server adress from slapos: ${address}`);
                         }
                     } catch (err){
                         s.log(GF_LOG_WARNING, `invalid response payload: ${err}`);
                     }
                 } else {
-                    s.log(GF_LOG_WARNING, `failed to fetch mcast server address from slapos: ${req.status}`);
+                    s.log(GF_LOG_INFO, `failed to fetch mcast server address from slapos: ${req.status}`);
                     s.instanceMabrServerInstanceGuid = null;
                 }
                 s.instanceMabrServerAddress = address;
@@ -134,11 +119,11 @@ class DynMABR {
         };
 
         req.onerror = (e) => {
-            s.log(GF_LOG_WARNING, `failed to fetch mcast server - onerror - ${req.readyState} - ${req.status} - ${req.statusText}`) 
+            s.log(GF_LOG_WARNING, `failed to fetch mcast server address from slapos: ${e}`) 
             callback(false, e);
         };
 
-        const uri = `${s.service_config.smartcd_api_endpoint}/slapos.get.v0.software_instance?instance_guid=${s.instanceMabrServerInstanceGuid}&cacheburst=${cacheBurst()}`;
+        const uri = `${s.service_config.smartcd_api_endpoint}/slapos.get.v0.software_instance?instance_guid=${s.instanceMabrServerInstanceGuid}&cacheburst=${sys.clock_ms()}`;
         req.open("POST", uri);
         req.setRequestHeader("Content-Type", "application/json");
         req.send(JSON.stringify({
