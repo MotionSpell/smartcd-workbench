@@ -304,7 +304,7 @@
           </div>
           <div class="toggle-wrap">
             <span class="toggle-label">%</span>
-            <div class="toggle off" id="served-toggle" onclick="toggleServed()"></div>
+            <div class="toggle off" id="served-toggle" onclick="togglePercentage()"></div>
           </div>
         </div>
         <div class="section-body compact" id="served-bars"></div>
@@ -317,10 +317,6 @@
             <span>Cache Size</span>
             <span class="hdr-count" id="cache-size">0</span>
           </div>
-          <div class="toggle-wrap">
-            <span class="toggle-label">%</span>
-            <div class="toggle off" id="cache-toggle" onclick="toggleCache()"></div>
-          </div>
         </div>
         <div class="section-body compact" id="cache-bars"></div>
       </div>
@@ -331,10 +327,6 @@
           <div class="hdr-left">
             <span>MABR packets</span>
             <span class="hdr-count" id="mabr-received">0</span>
-          </div>
-          <div class="toggle-wrap">
-            <span class="toggle-label">%</span>
-            <div class="toggle off" id="mabr-repair-toggle" onclick="toggleRepairStats()"></div>
           </div>
         </div>
         <div class="section-body compact" id="mabr-bars"></div>
@@ -353,14 +345,14 @@
 </div><!-- /main -->
 
 <script>
-const GATEWAY            = 'http://127.0.0.1:8081';
+let GATEWAY            = 'http://127.0.0.1:8081';
 const POLL_INTERVAL      = 3000;
 const ORCH_POLL_INTERVAL = 3000;
 
 let statsData       = null;
 let orchData        = null;
 let selectedService = null;
-let servedPct       = false;    // default OFF
+let showPercentage       = false;    // default OFF
 let cachePct        = false;    // default OFF
 let dashPlayer      = null;
 let currentSrc      = null;
@@ -391,6 +383,9 @@ async function pollOrch() {
     const res = await fetch(`/api/status`);
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.body}`);
     orchData = await res.json();
+    if (orchData.gateway_cfg && orchData.gateway_cfg.host && orchData.gateway_cfg.port){
+      GATEWAY = `http://${orchData.gateway_cfg.host}:${orchData.gateway_cfg.port}`
+    }
     updateAppUI();
   } catch (e) { 
     console.error(e); 
@@ -474,7 +469,7 @@ function selectService(id) {
 function renderServicePanel(id, s) {
   // Served requests
   document.getElementById('served-total').textContent = s.servedRequests.toLocaleString();
-  renderBars('served-bars', s.servedFrom, s.servedRequests, servedPct, {
+  renderBars('served-bars', s.servedFrom, s.servedRequests, showPercentage, {
     http:       { label: 'HTTP',     cls: '' },
     mcast:      { label: 'MCAST',    cls: 'mcast' },
     'off-edge': { label: 'OFF-EDGE', cls: 'offedge' }
@@ -482,17 +477,18 @@ function renderServicePanel(id, s) {
 
   // Cache
   document.getElementById('cache-size').textContent = s.cacheSize.toLocaleString();
-  renderBars('cache-bars', s.cache, s.cacheSize, cachePct, {
+  renderBars('cache-bars', s.cache, s.cacheSize, showPercentage, {
     mabr: { label: 'MABR', cls: 'mcast' },
     http: { label: 'HTTP', cls: '' }
   });
 
   // mabr Stats
   document.getElementById('mabr-received').textContent = s.mabrRepairStats.received.toLocaleString();
-  renderBars('mabr-bars', s.mabrRepairStats, s.mabrRepairStats.received, cachePct, {
+  renderBars('mabr-bars', s.mabrRepairStats, s.mabrRepairStats.received, showPercentage, {
     corrupted: { label: 'corrupted', cls: 'corrupted' },
     partialRepair: { label: 'partial repair', cls: 'partialRepair' },
-    brokenData: { label: 'broken data', cls: 'brokenData' }
+    brokenData: { label: 'broken data', cls: 'brokenData' },
+    brokenData: { label: 'whole file', cls: 'wholeFile' }
   });
 
   const infoObj = {
@@ -521,21 +517,9 @@ function renderBars(containerId, values, total, pct, defs) {
 
 // ── Toggles ───────────────────────────────────────────────────────────────────
 
-function toggleServed() {
-  servedPct = !servedPct;
-  document.getElementById('served-toggle').classList.toggle('on', servedPct);
-  if (selectedService && statsData) renderServicePanel(selectedService, statsData.status[selectedService]);
-}
-
-function toggleCache() {
-  cachePct = !cachePct;
-  document.getElementById('cache-toggle').classList.toggle('on', cachePct);
-  if (selectedService && statsData) renderServicePanel(selectedService, statsData.status[selectedService]);
-}
-
-function toggleRepairStats() {
-  repairPct = !repairPct;
-  document.getElementById('mabr-repair-toggle').classList.toggle('on', repairPct);
+function togglePercentage() {
+  showPercentage = !showPercentage;
+  document.getElementById('served-toggle').classList.toggle('on', showPercentage);
   if (selectedService && statsData) renderServicePanel(selectedService, statsData.status[selectedService]);
 }
 
@@ -584,8 +568,8 @@ function loadSource(url, btn) {
         },
         delay: {
             liveDelayFragmentCount: NaN,
-            liveDelay: NaN,
-            useSuggestedPresentationDelay: true
+            liveDelay: 15,
+            useSuggestedPresentationDelay: false
         },
         liveCatchup: {
             enabled: false
