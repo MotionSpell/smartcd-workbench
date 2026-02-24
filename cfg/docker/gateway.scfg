@@ -1,7 +1,7 @@
 [
   {
-    "id": "1003_avc_hd_sdr_mpegh",
-    "local": "/1003_avc_hd_sdr_mpegh/Manifest.mpd",
+    "id": "service1",
+    "local": "/service1/Manifest.mpd",
     "timeshift": 60,
     "http": "https://live-linear.dvb.org/livesim2/tsbd_30/spd_4/utc_httpisoms/start_1735689600/1003_avc_hd_sdr_mpegh/manifest_livesim.mpd",
     "repair": true,
