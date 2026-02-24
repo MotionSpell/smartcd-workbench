@@ -345,7 +345,6 @@
 </div><!-- /main -->
 
 <script>
-let GATEWAY            = 'http://127.0.0.1:8081';
 const POLL_INTERVAL      = 3000;
 const ORCH_POLL_INTERVAL = 3000;
 
@@ -360,6 +359,11 @@ let firstPollDone   = false;
 
 // Read anchor once at startup
 const anchorId = window.location.hash ? decodeURIComponent(window.location.hash.slice(1)) : null;
+const queryString = window.location.search;
+const urlParams = new URLSearchParams(queryString);
+const gw = urlParams.get('gateway');
+const GATEWAY  = gw ? `http://${gw}` : 'http://127.0.0.1:8081';
+
 
 // ── Polling ──────────────────────────────────────────────────────────────────
 
@@ -383,9 +387,6 @@ async function pollOrch() {
     const res = await fetch(`/api/status`);
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.body}`);
     orchData = await res.json();
-    if (orchData.gateway_cfg && orchData.gateway_cfg.host && orchData.gateway_cfg.port){
-      GATEWAY = `http://${orchData.gateway_cfg.host}:${orchData.gateway_cfg.port}`
-    }
     updateAppUI();
   } catch (e) { 
     console.error(e); 
