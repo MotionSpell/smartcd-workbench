@@ -1,18 +1,13 @@
-![./workbench.png](workbench.png)
-
 # gpac mabr gateway
+
+This repository demonstrates usage of gpac's mediaserver filter to run an mabr gateway supporting dynamic unicast/multicast switching.
+
 
 ## installation
 
 **android/termux**
 
-instructions to build gpac on termux
-
-install the *mediaserver* js scripts:
-```
-curl /////raw.githubusercontent.com///// /data/data/com.termux/files/home/scd-gateway/
-```
-
+to run the gateway on android uing Termux, refer to: [/cfg/termux/README.md](/cfg/termux/README.md)
 
 **linux**
 
@@ -23,6 +18,8 @@ cp gateway/gpac.scripts.jsf.mediaserver/*.js /usr/local/share/gpac/scripts/jsf/m
 
 
 ## configuration
+
+For details on the gateway configuration, please refer to gpac's [mediaserver filter documentation](https://wiki.gpac.io/Filters/mediaserver).
 
 gateway configuration file - `/gateway/termux/gateway.scfg`:
 ```
@@ -40,24 +37,21 @@ gateway configuration file - `/gateway/termux/gateway.scfg`:
   }
 ]
 ```
-For details on the gateway configuration, please refer to gpac's [mediaserver filter documentation](https://wiki.gpac.io/Filters/mediaserver).
 
 Properties starting with `smartcd_api_` are not standard gpac options, but are specific to the `gateway/gpac.scripts.jsf.mediaserver/dyn_mabr.js` module that implements dynamic unicast/multicast switching.
 
-Replace *smartcd_api_endpoint* with to point to the machine exposing the slapos API:
+Replace *smartcd_api_endpoint* with to point to the machine exposing the slapos orchestrator API:
 ```
     "smartcd_api_endpoint": "http://192.168.1.180:3000/api",
 ```
 
-
-
 ## test environment
 
-the scd-gateway-tools command is lightweight nodejs script to setup a test environment
+the *scd-gateway-tools* command is a lightweight nodejs app to conveniently test the unicast/multicast dynamic switching behaviour.
 
-running the scd-gateway-tools command:
+running the *scd-gateway-tools* command:
 ```
-npm run scd-gateway-tools cfg/local/route.yml
+npm run scd-gateway-tools ./cfg/local/gateway.yml
 ```
 - exposes a page to monitor the gateway & play the services with dashjs
 - exposes an api to start/stop gpac as an mabr server for the configured services
@@ -122,5 +116,4 @@ on amd64 is the official gpac ubuntu image is used
 ```
 docker build -t localhost/gpac -f gateway/gpac.arm64.Dockerfile .
 ```
-on arm64 is the official gpac ubuntu image is used
-
+on arm64 a custom Dockerfile must be built
