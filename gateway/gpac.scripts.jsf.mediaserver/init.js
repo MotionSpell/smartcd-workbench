@@ -703,7 +703,7 @@ httpout.on_request = (req) =>
 
 	if (req.url.startsWith('/stats')){
 		req.reply = 200;
-		req.setRequestHeader("Content-Type", "application/json");
+		// req.setRequestHeader("Content-Type", "application/json");
 		req.body = JSON.stringify(gatewayStatus());
 		req.send();
 		return;
