@@ -1,0 +1,5 @@
+port: 3000
+# to monitor the gateway, browse to:
+#   http://127.0.0.1:3000/?gateway=192.168.1.39%3A8081
+# and replace the the gateway url query param with the gateway's ip and port.
+# make sur the :cors=on option is set on the `mediaserver` filter

@@ -1,0 +1,13 @@
+[
+  {
+    "id": "service1",
+    "local": "/service1/Manifest.mpd",
+    "timeshift": 60,
+    "http": "https://live-linear.dvb.org/livesim2/tsbd_30/spd_4/utc_httpisoms/start_1735689600/1003_avc_hd_sdr_mpegh/manifest_livesim.mpd",
+    "repair": true,
+    "js": "dyn_mabr",
+    "smartcd_api_endpoint": "http://127.0.0.1:3000/api",
+    "smartcd_service_software_release_urn": "urn:1b54fdfa-55da-4896-9f53-028318ad51b5",
+    "smartcd_service_computer_guid": "COMP-1"
+  }
+]

@@ -1,5 +1,7 @@
+package-lock.json
 node_modules
 .ignore
 tmp/
 logs/
 gateway/dev/
+.DS_Store
