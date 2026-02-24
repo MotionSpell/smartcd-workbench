@@ -1,0 +1,11 @@
+port: 3000
+
+mcast:
+  - service_id: "service1"
+    http_origin: "https://live-linear.dvb.org/livesim2/tsbd_30/spd_4/utc_httpisoms/start_1735689600/1003_avc_hd_sdr_mpegh/manifest_livesim.mpd"
+    mcast_output: "route://232.3.170.99:1234"
+    slapos_computer_guid: "COMP-1"
+
+gateway:
+  port: 8081
+  host: 192.168.1.39
