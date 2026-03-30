@@ -1,8 +1,6 @@
-FROM localhost/gpac:latest
+FROM gpac/ubuntu:latest
 
-# replace mediaserver/init.js, adds mediaserver/dyn_mabr.js
-# RUN rm /usr/local/share/gpac/scripts/jsf/mediaserver/init.js
-COPY gateway/gpac.scripts.jsf.mediaserver /usr/local/share/gpac/scripts/jsf/mediaserver
+COPY gateway/gpac.scripts.jsf.mediaserver /usr/share/gpac/scripts/jsf/mediaserver
 
 # add nodejs for browser monitoring, orchestrator api mock, gateway process wrapper
 RUN apt-get update && apt-get install -y curl
@@ -14,4 +12,4 @@ COPY . .
 
 RUN npm install
 
-CMD [ "npm", "run", "start", "/scd/gateway/cfg/docker/gateway.yml" ]
+CMD [ "node", "src/index.js", "/scd/gateway/cfg/docker/gateway.yml" ]
