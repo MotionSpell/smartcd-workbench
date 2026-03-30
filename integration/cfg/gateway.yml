@@ -1,0 +1,11 @@
+port: 3000
+
+mcast:
+  - service_id: "service1"
+    http_origin: "http://127.0.0.1:8888/livesim2/bbb_hevc_ac3_8s/manifest.mpd"
+    mcast_output: "route://232.3.170.99:1234"
+    slapos_computer_guid: "COMP-1"
+
+gateway:
+  port: 8081
+  scfg: /scd/gateway/cfg/docker/gateway.scfg

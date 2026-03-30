@@ -1,0 +1,13 @@
+[
+  {
+    "id": "service1",
+    "local": "/service1/Manifest.mpd",
+    "timeshift": 60,
+    "http": "http://127.0.0.1:8888/livesim2/bbb_hevc_ac3_8s/manifest.mpd",
+    "repair": true,
+    "js": "dyn_mabr",
+    "smartcd_api_endpoint": "http://127.0.0.1:5000/api",
+    "smartcd_service_software_release_urn": "urn:1b54fdfa-55da-4896-9f53-028318ad51b5",
+    "smartcd_service_computer_guid": "COMP-1"
+  }
+]

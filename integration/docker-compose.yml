@@ -1,0 +1,36 @@
+services:
+  api:
+    image: scd-route-api:2.1
+    container_name: api_service
+    network_mode: host
+    ports:
+      - "1234:1234"
+      - "5000:5000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      DOCKER_HOST: unix:///var/run/docker.sock
+      OUT_IFCE: 127.0.0.1
+      DEFAULT_ORIGIN: http://172.29.61.170:8888/livesim2/bbb_hevc_ac3_8s/manifest.mpd
+    restart: unless-stopped
+
+  gateway:
+    image: localhost/scd-gateway-tools:latest
+    network_mode: host
+    # overide container default gateway & nodejs wrapper configuration
+    volumes:
+     - ./cfg:/scd/gateway/cfg/docker
+     - ./cfg:/scd/gateway/logs
+    ports:
+      - "3000:3000"
+      - "8081:8081"    
+
+  livesim2:
+    image: ghcr.io/dash-industry-forum/livesim2/livesim2:v1.7.0
+    container_name: livesim2
+    network_mode: host
+    ports: 
+      - "8888:8888"
+    restart: always
+
+
