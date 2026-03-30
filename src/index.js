@@ -171,10 +171,17 @@ if (args.length > 1 && args[1] == "scfg"){
     };
     res.json(data);
   });
-
-  app.listen(cfg.port, () => {
-    console.log(`API available at http://127.0.0.1:${cfg.port}`);
+  
+  app.listen(cfg.port, '0.0.0.0', () => {
+    console.log(`API available at http://0.0.0.0:${cfg.port}`);
   });
+
+  const shutdown = () => {
+    Object.keys(pm.processes).forEach(key => pm.stop(key));
+    process.exit();
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 
 }
 

@@ -362,14 +362,17 @@ const anchorId = window.location.hash ? decodeURIComponent(window.location.hash.
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 const gw = urlParams.get('gateway');
-const GATEWAY  = gw ? `http://${gw}` : 'http://127.0.0.1:8081';
 
+const gatewayUri = () => {
+  const overide = urlParams.get('gateway');
+  return overide ? `http://${overide}` : `http://${window.location.hostname}:8081`;
+} 
 
 // ── Polling ──────────────────────────────────────────────────────────────────
 
 async function pollGateway() {
   try {
-    const res  = await fetch(`${GATEWAY}/stats`);
+    const res  = await fetch(`${gatewayUri()}/stats`);
     const text = await res.text();
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.body}`);
     const json = JSON.parse(text);
@@ -461,7 +464,7 @@ function selectService(id) {
   if (statsData && s) {
     renderServicePanel(id, s)
     // Player — LOCAL first, then HTTP ORIGIN; auto-load LOCAL
-    const localUrl = `${GATEWAY}${s.local}`;
+    const localUrl = `${gatewayUri()}${s.local}`;
     buildPlayerSources(localUrl, s.httpOrigin);  
   };
   updateAppUI();
